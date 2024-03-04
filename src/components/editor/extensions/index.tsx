@@ -4,7 +4,9 @@ import TiptapLink from "@tiptap/extension-link";
 import TiptapImage from "@tiptap/extension-image";
 import Placeholder from "@tiptap/extension-placeholder";
 import TiptapUnderline from "@tiptap/extension-underline";
+import CodeBlockLowlight from "@tiptap/extension-code-block-lowlight";
 import TextStyle from "@tiptap/extension-text-style";
+
 import { Color } from "@tiptap/extension-color";
 
 import { Markdown } from "tiptap-markdown";
@@ -13,7 +15,7 @@ import Highlight from "@tiptap/extension-highlight";
 // import CustomKeymap from "./custom-keymap";
 // import DragAndDrop from "./drag-and-drop";
 // import { ImageResizer } from "./image-resizer";
-import {bundledLanguages, bundledThemes, getHighlighter} from "shiki"
+import { BundledLanguage, BundledTheme, HighlighterGeneric, bundledLanguages, bundledThemes, getHighlighter } from "shiki"
 import { TaskItem } from "@tiptap/extension-task-item";
 import { TaskList } from "@tiptap/extension-task-list";
 import { InputRule } from "@tiptap/core";
@@ -21,13 +23,14 @@ import { cn } from "@/lib/utils";
 import { CodeBlockHighlight } from "./codeBlock";
 
 
-const highlight = await getHighlighter({
-  langs: Object.keys(bundledLanguages),
-  themes: Object.keys(bundledThemes),
-})
 
 
-export type HighLight = typeof highlight
+
+
+
+
+
+export type HighLight = HighlighterGeneric<BundledLanguage, BundledTheme>
 
 const PlaceholderExtension = Placeholder.configure({
   placeholder: ({ node }) => {
@@ -99,10 +102,10 @@ const taskList = TaskList.configure({
   },
 });
 
-const codeBlockHighlight = CodeBlockHighlight.configure({
-  shiki: highlight,
-  defaultLanguage: 'plaintext'
-})
+// const codeBlockHighlight = CodeBlockHighlight.configure({
+//   shiki: highlight,
+//   defaultLanguage: 'plaintext'
+// })
 
 const taskItem = TaskItem.configure({
   HTMLAttributes: {
@@ -160,6 +163,33 @@ const starterKit = StarterKit.configure({
   gapcursor: false,
 });
 
+export const getDefaultExtensions = async () => {
+  const highlight = await getHighlighter({
+    langs: Object.keys(bundledLanguages),
+    themes: Object.keys(bundledThemes),
+  })
+  const codeBlockHighlight = CodeBlockHighlight.configure({
+    shiki: highlight,
+    defaultLanguage: 'plaintext'
+  })
+  const defaultExtensions = [
+    starterKit,
+    placeholder,
+    tiptapLink,
+    // tiptapImage,
+    // updatedImage,
+    taskList,
+    taskItem,
+    horizontalRule,
+    codeBlockHighlight,
+
+    PlaceholderExtension,
+
+  ];
+  return defaultExtensions
+}
+
+
 export const defaultExtensions = [
   starterKit,
   placeholder,
@@ -169,7 +199,7 @@ export const defaultExtensions = [
   taskList,
   taskItem,
   horizontalRule,
-  codeBlockHighlight,
+  // codeBlockHighlight,
   PlaceholderExtension,
 
 ];

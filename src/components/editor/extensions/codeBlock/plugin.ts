@@ -3,23 +3,31 @@ import { Node as ProsemirrorNode } from '@tiptap/pm/model'
 import { Plugin, PluginKey } from '@tiptap/pm/state'
 import { Decoration, DecorationSet } from '@tiptap/pm/view'
 import { HighLight } from '..'
-import { bundledLanguages } from 'shiki'
+import { DecorationItem, bundledLanguages, type codeToHast } from 'shiki'
+type ExtractPromiseType<T> = T extends Promise<infer R> ? R : never;
+type Root = ExtractPromiseType<ReturnType<typeof codeToHast>>
 
-function parseNodes(nodes: any[], className: string[] = []): { text: string; classes: string[] }[] {
-  return nodes
-    .map(node => {
-      const classes = [...className, ...(node.properties ? node.properties.className : [])]
+function parseNodes(nodes: any[], className: string[] = [], styles: string[] = []): { text: string; classes: string[], styleList: string[] }[] {
+  const result: { text: string; classes: string[], styleList: string[] }[] = []
+  for (let i = 0; i < nodes.length; i++) {
+    const node = nodes[i];
+    if (node.tagName === "pre" || node.tagName === "code") {
+      continue
+    }
+    const classes = [...className, node.properties && node.properties.class]
+        const styleList = [...styles, node.properties && node.properties.style]
 
-      if (node.children) {
-        return parseNodes(node.children, classes)
-      }
+        if (node.children) {
+          return parseNodes(node.children, classes, styleList)
+        }
 
-      return {
-        text: node.value,
-        classes,
-      }
-    })
-    .flat()
+        result.push( {
+          text: node.value,
+          classes,
+          styleList,
+        })
+  }
+ return  result.flat()
 }
 
 function getHighlightNodes(result: any) {
@@ -41,7 +49,7 @@ function getDecorations({
 }) {
   const decorations: Decoration[] = []
 
-  findChildren(doc, node => node.type.name === name).forEach(async block => {
+  findChildren(doc, node => node.type.name === name).forEach(block => {
     let from = block.pos + 1
     const language = block.node.attrs.language || defaultLanguage
     const languages = Object.keys(bundledLanguages)
@@ -50,32 +58,55 @@ function getDecorations({
     //   theme: 'vitesse-dark',
     // })
     const node = language && (languages.includes(language))
-      ? shiki.codeToTokens(block.node.textContent, {
-        lang: "typescript",
+      ? shiki.codeToHast(block.node.textContent, {
+        lang: language,
         theme: 'vitesse-dark',
       })
-      : shiki.codeToTokens(block.node.textContent, {
-        lang: "typescript",
+      : shiki.codeToHast(block.node.textContent, {
+        lang: defaultLanguage as any,
         theme: 'vitesse-dark',
       })
-console.log(node)
-    node.tokens.forEach(token => {
-      token.forEach(t =>{
-        const to = from + t.content.length
-        // if (node.length) {
-        const decoration = Decoration.inline(from, to, {
-          // class: node.classes.join(' '),
-          style: `color: ${t.color}; background-color: ${t.bgColor}`
-        })
-  
-        decorations.push(decoration)
-        // }
-  
-        from = to
-      })
-      
+    const hast = shiki.codeToHast(block.node.textContent, {
+      lang: language,
+      theme: 'vitesse-dark',
     })
-  
+    console.log(hast)
+
+
+
+    // node.tokens.forEach(token => {
+    //   token.forEach((t, i) => {
+    //     const to = from + t.content.length
+    //     // if (node.length) {
+    //     const decoration = Decoration.inline(from, to, {
+    //       // class: node.classes.join(' '),
+    //       style: `color: ${t.color}; background-color: ${t.bgColor}`
+    //     })
+
+    //     decorations.push(decoration)
+    //     // }
+    //     console.log()
+
+    //     from = to
+    //   })
+
+    // })
+    parseNodes(node.children).forEach(node => {
+      const to = from + node.text.length
+      console.log(node.text, "-----------------------------------------")
+
+      if (node.classes.length) {
+        const decoration = Decoration.inline(from, to, {
+          class: node.classes.join(' '),
+          style: node.styleList.join(' ')
+        })
+
+        decorations.push(decoration)
+      }
+
+      from = to
+    })
+
   })
 
   return DecorationSet.create(doc, decorations)

@@ -73,9 +73,9 @@ export const defaultEditorContent = {
     },
     {
       type: "codeBlock",
-      attrs: { language: null },
+      attrs: { language: "typescript" },
       content: [
-        {
+        { 
           type: "text",
           text: 'import { Editor } from "novel";\n\nexport default function App() {\n  return (\n     <Editor />\n  )\n}',
         },
