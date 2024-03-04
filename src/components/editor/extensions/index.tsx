@@ -13,11 +13,21 @@ import Highlight from "@tiptap/extension-highlight";
 // import CustomKeymap from "./custom-keymap";
 // import DragAndDrop from "./drag-and-drop";
 // import { ImageResizer } from "./image-resizer";
-
+import {bundledLanguages, bundledThemes, getHighlighter} from "shiki"
 import { TaskItem } from "@tiptap/extension-task-item";
 import { TaskList } from "@tiptap/extension-task-list";
 import { InputRule } from "@tiptap/core";
 import { cn } from "@/lib/utils";
+import { CodeBlockHighlight } from "./codeBlock";
+
+
+const highlight = await getHighlighter({
+  langs: Object.keys(bundledLanguages),
+  themes: Object.keys(bundledThemes),
+})
+
+
+export type HighLight = typeof highlight
 
 const PlaceholderExtension = Placeholder.configure({
   placeholder: ({ node }) => {
@@ -53,10 +63,11 @@ const Horizontal = HorizontalRule.extend({
 });
 
 
+
 //TODO I am using cx here to get tailwind autocomplete working, idk if someone else can write a regex to just capture the class key in objects
 
 //You can overwrite the placeholder with your own configuration
-const placeholder = Placeholder;
+const placeholder = PlaceholderExtension;
 const tiptapLink = TiptapLink.configure({
   HTMLAttributes: {
     class: cn(
@@ -87,6 +98,12 @@ const taskList = TaskList.configure({
     class: cn("not-prose pl-2"),
   },
 });
+
+const codeBlockHighlight = CodeBlockHighlight.configure({
+  shiki: highlight,
+  defaultLanguage: 'plaintext'
+})
+
 const taskItem = TaskItem.configure({
   HTMLAttributes: {
     class: cn("flex items-start my-4"),
@@ -94,7 +111,7 @@ const taskItem = TaskItem.configure({
   nested: true,
 });
 
-const horizontalRule = HorizontalRule.configure({
+const horizontalRule = Horizontal.configure({
   HTMLAttributes: {
     class: cn("mt-4 mb-6 border-t border-muted-foreground"),
   },
@@ -121,11 +138,14 @@ const starterKit = StarterKit.configure({
       class: cn("border-l-4 border-primary"),
     },
   },
-  codeBlock: {
-    HTMLAttributes: {
-      class: cn("rounded-sm bg-muted border p-5 font-mono font-medium"),
-    },
-  },
+  // codeBlock: {
+  //   HTMLAttributes: {
+  //     class: cn("rounded-sm bg-muted border p-5 font-mono font-medium"),
+  //   },
+  // },
+  // codeBlockLowlight: {
+
+  // },
   code: {
     HTMLAttributes: {
       class: cn("rounded-md bg-muted  px-1.5 py-1 font-mono font-medium"),
@@ -149,6 +169,9 @@ export const defaultExtensions = [
   taskList,
   taskItem,
   horizontalRule,
+  codeBlockHighlight,
+  PlaceholderExtension,
+
 ];
 
 
